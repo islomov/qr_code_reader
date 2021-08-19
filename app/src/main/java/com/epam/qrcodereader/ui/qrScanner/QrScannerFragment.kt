@@ -43,12 +43,12 @@ class QrScannerFragment : BaseFragment<FragmentQrScannerBinding>() {
         binding?.viewFinder?.post {
             displayId = binding?.viewFinder?.display?.displayId ?: -1
 
-            bindCameraUseCases()
+            bindCamera()
         }
 
     }
 
-    private fun bindCameraUseCases() {
+    private fun bindCamera() {
         val metrics = DisplayMetrics().also { binding?.viewFinder?.display?.getRealMetrics(it) }
 
         val screenAspectRatio = aspectRatio(metrics.widthPixels, metrics.heightPixels)
@@ -64,58 +64,67 @@ class QrScannerFragment : BaseFragment<FragmentQrScannerBinding>() {
         cameraProviderFuture.addListener(Runnable {
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
-            preview = Preview.Builder()
-                .setTargetAspectRatio(screenAspectRatio)
-                .setTargetRotation(rotation)
-                .build()
+            preview = buildPreview(screenAspectRatio,rotation)
 
             preview?.setSurfaceProvider(binding?.viewFinder?.surfaceProvider)
 
-            imageCapture = ImageCapture.Builder()
-                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                .setTargetAspectRatio(screenAspectRatio)
-                .setTargetRotation(rotation)
-                .build()
+            imageCapture = buildImageCapture(screenAspectRatio,rotation)
 
-            imageAnalyzer = ImageAnalysis.Builder()
-                .setTargetAspectRatio(screenAspectRatio)
-                .setTargetRotation(rotation)
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-                .also {
-                    it.setAnalyzer(cameraExecutor, QrCodeAnalyzer(onQrCodes = {list ->
-                        if (list.isNotEmpty()) {
-                            val value = list[0].rawValue
-
-                            if (value != null) {
-                                activity?.openScannerResult(value)
-                            } else {
-                                Toast.makeText(requireContext(),"QR Code is empty",Toast.LENGTH_LONG).show()
-                            }
-
-                            cameraExecutor.shutdownNow()
-                        }
-                    }, onFailure = {
-                        Log.e("Islomov","Error on imageanalyzer")
-                    }))
-                }
+            imageAnalyzer = buildAnalyzer(screenAspectRatio,rotation)
 
             cameraProvider.unbindAll()
 
             try {
-                camera = cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageAnalyzer).also {
-
-                    preview = Preview.Builder().build().also {
-                        it.setSurfaceProvider(binding?.viewFinder?.surfaceProvider)
-                    }
-                }
-
+                bindToLifecycle(cameraProvider,cameraSelector)
             } catch (exc: Exception) {
                 Log.e("Islomov","Use case binding failed:${exc}")
             }
 
         }, ContextCompat.getMainExecutor(requireContext()))
+    }
+
+    private fun buildPreview(screenAspectRatio: Int,rotation: Int) = Preview.Builder()
+        .setTargetAspectRatio(screenAspectRatio)
+        .setTargetRotation(rotation)
+        .build()
+
+    private fun buildAnalyzer(screenAspectRatio: Int,rotation: Int) = ImageAnalysis.Builder()
+        .setTargetAspectRatio(screenAspectRatio)
+        .setTargetRotation(rotation)
+        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+        .build()
+        .also {
+            it.setAnalyzer(cameraExecutor, QrCodeAnalyzer(onQrCodes = {list ->
+                if (list.isNotEmpty()) {
+                    val value = list[0].rawValue
+
+                    if (value != null) {
+                        activity?.openScannerResult(value)
+                    } else {
+                        Toast.makeText(requireContext(),"QR Code is empty",Toast.LENGTH_LONG).show()
+                    }
+
+                    cameraExecutor.shutdownNow()
+                }
+            }, onFailure = {
+                Log.e("Islomov","Error on imageanalyzer")
+            }))
+        }
+
+    private fun buildImageCapture(screenAspectRatio: Int,rotation: Int) = ImageCapture.Builder()
+        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+        .setTargetAspectRatio(screenAspectRatio)
+        .setTargetRotation(rotation)
+        .build()
+
+    private fun bindToLifecycle(cameraProvider: ProcessCameraProvider,cameraSelector: CameraSelector) {
+        camera = cameraProvider.bindToLifecycle(
+            this, cameraSelector, preview, imageAnalyzer).also {
+
+            preview = Preview.Builder().build().also {
+                it.setSurfaceProvider(binding?.viewFinder?.surfaceProvider)
+            }
+        }
     }
 
     private fun aspectRatio(width: Int, height: Int): Int {
@@ -161,10 +170,8 @@ class QrScannerFragment : BaseFragment<FragmentQrScannerBinding>() {
 
     override fun onPause() {
         super.onPause()
-
         cameraExecutor.shutdown()
     }
-
 
     companion object {
 
