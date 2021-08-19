@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "970677378320",
+    "project_id": "qrcodereader-83d38",
+    "storage_bucket": "qrcodereader-83d38.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:970677378320:android:a610dbebf059cd545d9995",
+        "android_client_info": {
+          "package_name": "com.epam.qrcodereader"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "970677378320-74aiqcnt25s6pcm05nq8c75ssuk8cdkt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA47QKnhezIFhWyhu0fewWcsFjG4S6YeSU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "970677378320-74aiqcnt25s6pcm05nq8c75ssuk8cdkt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
